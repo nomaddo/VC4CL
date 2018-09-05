@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <iterator>
 #include <sstream>
+#include "../../VC4C/include/tools.h"
 
 #ifdef COMPILER_HEADER
 #define CPPLOG_NAMESPACE logging
@@ -86,7 +87,19 @@ static cl_int precompile_program(Program* program, const std::string& options,
             CL_COMPILE_PROGRAM_FAILURE, __FILE__, __LINE__, buildString("Invalid source-code type %d", sourceType));
 
     vc4c::Configuration config;
-
+    char * env_value = std::getenv("VC4CL_COMP_ARGS");
+    if (env_value)
+    {
+        auto ss = std::stringstream(env_value);
+        std::string buf;
+        while (std::getline(ss, buf, ' ')) {
+            bool r = vc4c::tools::parseConfigurationParameter(config, buf);
+            if (!r)
+            {
+                throw vc4c::CompilationError(vc4c::CompilationStep::GENERAL, "Fail to parse option in VC4CL_COMP_ARGS", buf);
+            }
+        }
+    }
     program->buildInfo.options = options;
 #ifdef DEBUG_MODE
     std::cout << "[VC4CL] Precompiling source with: " << program->buildInfo.options << std::endl;
